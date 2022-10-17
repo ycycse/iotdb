@@ -375,6 +375,44 @@ public class SessionConnection {
         timeout);
   }
 
+  protected OldSessionDataSet OldexecuteQueryStatement(String sql, long timeout)
+      throws StatementExecutionException, IoTDBConnectionException, RedirectException {
+    TSExecuteStatementReq execReq = new TSExecuteStatementReq(sessionId, sql, statementId);
+    execReq.setFetchSize(session.fetchSize);
+    execReq.setTimeout(timeout);
+    TSExecuteStatementResp execResp;
+    try {
+      execReq.setEnableRedirectQuery(enableRedirect);
+      execResp = client.executeQueryStatement(execReq);
+      RpcUtils.verifySuccessWithRedirection(execResp.getStatus());
+    } catch (TException e) {
+      if (reconnect()) {
+        try {
+          execReq.setSessionId(sessionId);
+          execReq.setStatementId(statementId);
+          execResp = client.executeQueryStatement(execReq);
+        } catch (TException tException) {
+          throw new IoTDBConnectionException(tException);
+        }
+      } else {
+        throw new IoTDBConnectionException(logForReconnectionFailure());
+      }
+    }
+    RpcUtils.verifySuccess(execResp.getStatus());
+    return new OldSessionDataSet(
+        sql,
+        execResp.getColumns(),
+        execResp.getDataTypeList(),
+        execResp.columnNameIndexMap,
+        execResp.getQueryId(),
+        statementId,
+        client,
+        sessionId,
+        execResp.queryDataSet,
+        execResp.isIgnoreTimeStamp(),
+        timeout);
+  }
+
   protected void executeNonQueryStatement(String sql)
       throws IoTDBConnectionException, StatementExecutionException {
     TSExecuteStatementReq execReq = new TSExecuteStatementReq(sessionId, sql, statementId);

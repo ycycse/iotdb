@@ -673,6 +673,34 @@ public class Session implements ISession {
     return executeStatementMayRedirect(sql, timeoutInMs);
   }
 
+  public OldSessionDataSet oldexecuteStatement(String sql, long timeoutInMs)
+      throws IoTDBConnectionException, StatementExecutionException {
+    try {
+      logger.debug("{} execute sql {}", defaultSessionConnection.getEndPoint(), sql);
+      return defaultSessionConnection.OldexecuteQueryStatement(sql, timeoutInMs);
+    } catch (RedirectException e) {
+      handleQueryRedirection(e.getEndPoint());
+      if (enableQueryRedirection) {
+        logger.debug(
+            "{} redirect query {} to {}",
+            defaultSessionConnection.getEndPoint(),
+            sql,
+            e.getEndPoint());
+        // retry
+        try {
+          return defaultSessionConnection.OldexecuteQueryStatement(sql, queryTimeoutInMs);
+        } catch (RedirectException redirectException) {
+          logger.error("{} redirect twice", sql, redirectException);
+          throw new StatementExecutionException(sql + " redirect twice, please try again.");
+        } catch (StatementExecutionException ex) {
+          throw new RuntimeException(ex);
+        }
+      } else {
+        throw new StatementExecutionException(MSG_DONOT_ENABLE_REDIRECT);
+      }
+    }
+  }
+
   /**
    * execute the query, may redirect query to other node.
    *
