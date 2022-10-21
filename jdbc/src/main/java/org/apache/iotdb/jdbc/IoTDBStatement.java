@@ -265,7 +265,7 @@ public class IoTDBStatement implements Statement {
       throw new IoTDBSQLException(e.getMessage(), execResp.getStatus());
     }
 
-    //TODO ??
+    // TODO ??
     deepCopyResp(execResp);
     if (execResp.isSetColumns()) {
       queryId = execResp.getQueryId();
@@ -290,7 +290,7 @@ public class IoTDBStatement implements Statement {
                 aliasColumn);
       } else {
         this.resultSet =
-            new NewIoTDBJDBCResultSet(
+            new IoTDBJDBCResultSet(
                 this,
                 execResp.getColumns(),
                 execResp.getDataTypeList(),
@@ -442,7 +442,7 @@ public class IoTDBStatement implements Statement {
               aliasColumn);
     } else {
       this.resultSet =
-          new NewIoTDBJDBCResultSet(
+          new IoTDBJDBCResultSet(
               this,
               execResp.getColumns(),
               execResp.getDataTypeList(),

@@ -19,7 +19,7 @@
 
 package org.apache.iotdb.jdbc;
 
-import org.apache.iotdb.rpc.IoTDBRpcDataSet;
+import org.apache.iotdb.rpc.IoTDBJDBCDataSet;
 import org.apache.iotdb.rpc.StatementExecutionException;
 import org.apache.iotdb.service.rpc.thrift.IClientRPCService;
 
@@ -50,18 +50,18 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 
-public abstract class NewAbstractIoTDBJDBCResultSet implements ResultSet {
+public abstract class OldAbstractIoTDBJDBCResultSet implements ResultSet {
 
   protected Statement statement;
   protected SQLWarning warningChain = null;
   protected List<String> columnTypeList;
-  protected IoTDBRpcDataSet ioTDBRpcDataSet;
+  protected IoTDBJDBCDataSet ioTDBRpcDataSet;
   protected IoTDBTracingInfo ioTDBRpcTracingInfo;
   private boolean isRpcFetchResult = true;
   private List<String> sgColumns;
   private BitSet aliasColumnMap;
 
-  public NewAbstractIoTDBJDBCResultSet(
+  public OldAbstractIoTDBJDBCResultSet(
       Statement statement,
       List<String> columnNameList,
       List<String> columnTypeList,
@@ -76,7 +76,7 @@ public abstract class NewAbstractIoTDBJDBCResultSet implements ResultSet {
       BitSet aliasColumnMap)
       throws SQLException {
     this.ioTDBRpcDataSet =
-        new IoTDBRpcDataSet(
+        new IoTDBJDBCDataSet(
             sql,
             columnNameList,
             columnTypeList,
@@ -96,7 +96,7 @@ public abstract class NewAbstractIoTDBJDBCResultSet implements ResultSet {
     this.aliasColumnMap = aliasColumnMap;
   }
 
-  public NewAbstractIoTDBJDBCResultSet(
+  public OldAbstractIoTDBJDBCResultSet(
       Statement statement,
       List<String> columnNameList,
       List<String> columnTypeList,
@@ -110,7 +110,7 @@ public abstract class NewAbstractIoTDBJDBCResultSet implements ResultSet {
       boolean isRpcFetchResult)
       throws SQLException {
     this.ioTDBRpcDataSet =
-        new IoTDBRpcDataSet(
+        new IoTDBJDBCDataSet(
             sql,
             columnNameList,
             columnTypeList,
@@ -450,9 +450,6 @@ public abstract class NewAbstractIoTDBJDBCResultSet implements ResultSet {
         operationType = ((IoTDBNonAlignJDBCResultSet) statement.getResultSet()).getOperationType();
         this.sgColumns = ((IoTDBNonAlignJDBCResultSet) statement.getResultSet()).getSgColumns();
         nonAlign = true;
-      }else if (statement.getResultSet() instanceof NewIoTDBJDBCResultSet) {
-        operationType = ((NewIoTDBJDBCResultSet) statement.getResultSet()).getOperationType();
-        this.sgColumns = ((NewIoTDBJDBCResultSet) statement.getResultSet()).getSgColumns();
       }
     } catch (SQLException throwables) {
       throwables.printStackTrace();
@@ -711,21 +708,15 @@ public abstract class NewAbstractIoTDBJDBCResultSet implements ResultSet {
 
   @Override
   public boolean next() throws SQLException {
-    if (ioTDBRpcDataSet.hasCachedBlock()) {
-      ioTDBRpcDataSet.constructOneRow();
-      return true;
-    }
-    if (ioTDBRpcDataSet.hasCachedByteBuffer()) {
-      ioTDBRpcDataSet.constructOneTsBlock();
-      ioTDBRpcDataSet.constructOneRow();
+    if (hasCachedResults()) {
+      constructOneRow();
       return true;
     }
     if (ioTDBRpcDataSet.emptyResultSet) {
       return false;
     }
     if (isRpcFetchResult && fetchResults()) {
-      ioTDBRpcDataSet.constructOneRow();
-      ioTDBRpcDataSet.constructOneTsBlock();
+      constructOneRow();
       return true;
     }
     return false;

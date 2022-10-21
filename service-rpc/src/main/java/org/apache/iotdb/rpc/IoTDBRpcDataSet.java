@@ -146,7 +146,7 @@ public class IoTDBRpcDataSet {
 
     this.queryResult = queryResult;
     this.queryResultSize = 0;
-    if(queryResult!=null){
+    if (queryResult != null) {
       queryResultSize = queryResult.size();
     }
     this.queryResultIndex = 0;
@@ -580,7 +580,7 @@ public class IoTDBRpcDataSet {
   }
 
   public void setQueryResult(List<ByteBuffer> queryResult) {
-    if(queryResult!=null){
+    if (queryResult != null) {
       this.queryResult = queryResult;
       this.queryResultSize = queryResult.size();
       this.queryResultIndex = 0;

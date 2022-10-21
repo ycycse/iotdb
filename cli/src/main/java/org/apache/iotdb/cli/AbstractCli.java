@@ -25,8 +25,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.iotdb.exception.ArgsErrorException;
 import org.apache.iotdb.jdbc.AbstractIoTDBJDBCResultSet;
 import org.apache.iotdb.jdbc.IoTDBConnection;
-import org.apache.iotdb.jdbc.NewAbstractIoTDBJDBCResultSet;
-import org.apache.iotdb.jdbc.NewIoTDBJDBCResultSet;
+import org.apache.iotdb.jdbc.IoTDBJDBCResultSet;
 import org.apache.iotdb.rpc.IoTDBConnectionException;
 import org.apache.iotdb.rpc.RpcUtils;
 import org.apache.iotdb.service.rpc.thrift.ServerProperties;
@@ -555,7 +554,7 @@ public abstract class AbstractCli {
             }
           }
           // output tracing activity
-          if (((NewAbstractIoTDBJDBCResultSet) resultSet).isSetTracingInfo()) {
+          if (((AbstractIoTDBJDBCResultSet) resultSet).isSetTracingInfo()) {
             maxSizeList = new ArrayList<>(2);
             lists = cacheTracingInfo(resultSet, maxSizeList);
             outputTracingInfo(lists, maxSizeList);
@@ -600,7 +599,7 @@ public abstract class AbstractCli {
     }
 
     List<List<String>> lists = new ArrayList<>(columnCount);
-    if (resultSet instanceof NewIoTDBJDBCResultSet) {
+    if (resultSet instanceof IoTDBJDBCResultSet) {
       for (int i = 1; i <= columnCount; i++) {
         List<String> list = new ArrayList<>(maxPrintRowCount + 1);
         String columnLabel = resultSetMetaData.getColumnLabel(i);
@@ -610,7 +609,7 @@ public abstract class AbstractCli {
         maxSizeList.add(columnLabel.length() + count);
       }
 
-      boolean printTimestamp = !((NewIoTDBJDBCResultSet) resultSet).isIgnoreTimeStamp();
+      boolean printTimestamp = !((IoTDBJDBCResultSet) resultSet).isIgnoreTimeStamp();
       while (j < maxPrintRowCount && !isReachEnd) {
         for (int i = 1; i <= columnCount; i++) {
           String tmp;
