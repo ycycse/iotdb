@@ -22,52 +22,52 @@ package org.apache.iotdb.jdbc;
 import org.apache.iotdb.rpc.IoTDBConnectionException;
 import org.apache.iotdb.rpc.StatementExecutionException;
 import org.apache.iotdb.service.rpc.thrift.IClientRPCService;
-import org.apache.iotdb.service.rpc.thrift.TSQueryDataSet;
 import org.apache.iotdb.service.rpc.thrift.TSTracingInfo;
 
+import java.nio.ByteBuffer;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.BitSet;
 import java.util.List;
 import java.util.Map;
 
-public class IoTDBJDBCResultSet extends AbstractIoTDBJDBCResultSet {
+public class NewIoTDBJDBCResultSet extends NewAbstractIoTDBJDBCResultSet {
   private String operationType = "";
   private List<String> columns = null;
   private List<String> sgColumns = null;
 
-  public IoTDBJDBCResultSet(
-          Statement statement,
-          List<String> columnNameList,
-          List<String> columnTypeList,
-          Map<String, Integer> columnNameIndex,
-          boolean ignoreTimeStamp,
-          IClientRPCService.Iface client,
-          String sql,
-          long queryId,
-          long sessionId,
-          TSQueryDataSet dataset,
-          TSTracingInfo tracingInfo,
-          long timeout,
-          String operationType,
-          List<String> columns,
-          List<String> sgColumns,
-          BitSet aliasColumnMap)
-          throws SQLException {
+  public NewIoTDBJDBCResultSet(
+      Statement statement,
+      List<String> columnNameList,
+      List<String> columnTypeList,
+      Map<String, Integer> columnNameIndex,
+      boolean ignoreTimeStamp,
+      IClientRPCService.Iface client,
+      String sql,
+      long queryId,
+      long sessionId,
+      List<ByteBuffer> dataset,
+      TSTracingInfo tracingInfo,
+      long timeout,
+      String operationType,
+      List<String> columns,
+      List<String> sgColumns,
+      BitSet aliasColumnMap)
+      throws SQLException {
     super(
-            statement,
-            columnNameList,
-            columnTypeList,
-            columnNameIndex,
-            ignoreTimeStamp,
-            client,
-            sql,
-            queryId,
-            sessionId,
-            timeout,
-            sgColumns,
-            aliasColumnMap);
-    ioTDBRpcDataSet.setTsQueryDataSet(dataset);
+        statement,
+        columnNameList,
+        columnTypeList,
+        columnNameIndex,
+        ignoreTimeStamp,
+        client,
+        sql,
+        queryId,
+        sessionId,
+        timeout,
+        sgColumns,
+        aliasColumnMap);
+    ioTDBRpcDataSet.setQueryResult(dataset);
     if (tracingInfo != null) {
       ioTDBRpcTracingInfo = new IoTDBTracingInfo();
       ioTDBRpcTracingInfo.setTsTracingInfo(tracingInfo);
@@ -77,34 +77,34 @@ public class IoTDBJDBCResultSet extends AbstractIoTDBJDBCResultSet {
     this.sgColumns = sgColumns;
   }
 
-  public IoTDBJDBCResultSet(
-          Statement statement,
-          List<String> columnNameList,
-          List<String> columnTypeList,
-          Map<String, Integer> columnNameIndex,
-          boolean ignoreTimeStamp,
-          IClientRPCService.Iface client,
-          String sql,
-          long queryId,
-          long sessionId,
-          TSQueryDataSet dataset,
-          TSTracingInfo tracingInfo,
-          long timeout,
-          boolean isRpcFetchResult)
-          throws SQLException {
+  public NewIoTDBJDBCResultSet(
+      Statement statement,
+      List<String> columnNameList,
+      List<String> columnTypeList,
+      Map<String, Integer> columnNameIndex,
+      boolean ignoreTimeStamp,
+      IClientRPCService.Iface client,
+      String sql,
+      long queryId,
+      long sessionId,
+      List<ByteBuffer> dataset,
+      TSTracingInfo tracingInfo,
+      long timeout,
+      boolean isRpcFetchResult)
+      throws SQLException {
     super(
-            statement,
-            columnNameList,
-            columnTypeList,
-            columnNameIndex,
-            ignoreTimeStamp,
-            client,
-            sql,
-            queryId,
-            sessionId,
-            timeout,
-            isRpcFetchResult);
-    ioTDBRpcDataSet.setTsQueryDataSet(dataset);
+        statement,
+        columnNameList,
+        columnTypeList,
+        columnNameIndex,
+        ignoreTimeStamp,
+        client,
+        sql,
+        queryId,
+        sessionId,
+        timeout,
+        isRpcFetchResult);
+    ioTDBRpcDataSet.setQueryResult(dataset);
     if (tracingInfo != null) {
       ioTDBRpcTracingInfo = new IoTDBTracingInfo();
       ioTDBRpcTracingInfo.setTsTracingInfo(tracingInfo);
@@ -131,12 +131,19 @@ public class IoTDBJDBCResultSet extends AbstractIoTDBJDBCResultSet {
 
   @Override
   protected boolean hasCachedResults() {
-    return ioTDBRpcDataSet.hasCachedResults();
+    return ioTDBRpcDataSet.hasCachedBlock() || ioTDBRpcDataSet.hasCachedByteBuffer();
   }
 
   @Override
   protected void constructOneRow() {
-    ioTDBRpcDataSet.constructOneRow();
+    if (ioTDBRpcDataSet.hasCachedBlock()) {
+      ioTDBRpcDataSet.constructOneRow();
+      return;
+    }
+    if (ioTDBRpcDataSet.hasCachedByteBuffer()) {
+      ioTDBRpcDataSet.constructOneTsBlock();
+      ioTDBRpcDataSet.constructOneRow();
+    }
   }
 
   @Override

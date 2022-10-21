@@ -18,19 +18,19 @@
  */
 package org.apache.iotdb.cli;
 
-import org.apache.iotdb.exception.ArgsErrorException;
-import org.apache.iotdb.jdbc.AbstractIoTDBJDBCResultSet;
-import org.apache.iotdb.jdbc.IoTDBConnection;
-import org.apache.iotdb.jdbc.IoTDBJDBCResultSet;
-import org.apache.iotdb.rpc.IoTDBConnectionException;
-import org.apache.iotdb.rpc.RpcUtils;
-import org.apache.iotdb.service.rpc.thrift.ServerProperties;
-import org.apache.iotdb.tool.ImportCsv;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.iotdb.exception.ArgsErrorException;
+import org.apache.iotdb.jdbc.AbstractIoTDBJDBCResultSet;
+import org.apache.iotdb.jdbc.IoTDBConnection;
+import org.apache.iotdb.jdbc.NewAbstractIoTDBJDBCResultSet;
+import org.apache.iotdb.jdbc.NewIoTDBJDBCResultSet;
+import org.apache.iotdb.rpc.IoTDBConnectionException;
+import org.apache.iotdb.rpc.RpcUtils;
+import org.apache.iotdb.service.rpc.thrift.ServerProperties;
+import org.apache.iotdb.tool.ImportCsv;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -555,7 +555,7 @@ public abstract class AbstractCli {
             }
           }
           // output tracing activity
-          if (((AbstractIoTDBJDBCResultSet) resultSet).isSetTracingInfo()) {
+          if (((NewAbstractIoTDBJDBCResultSet) resultSet).isSetTracingInfo()) {
             maxSizeList = new ArrayList<>(2);
             lists = cacheTracingInfo(resultSet, maxSizeList);
             outputTracingInfo(lists, maxSizeList);
@@ -600,7 +600,7 @@ public abstract class AbstractCli {
     }
 
     List<List<String>> lists = new ArrayList<>(columnCount);
-    if (resultSet instanceof IoTDBJDBCResultSet) {
+    if (resultSet instanceof NewIoTDBJDBCResultSet) {
       for (int i = 1; i <= columnCount; i++) {
         List<String> list = new ArrayList<>(maxPrintRowCount + 1);
         String columnLabel = resultSetMetaData.getColumnLabel(i);
@@ -610,7 +610,7 @@ public abstract class AbstractCli {
         maxSizeList.add(columnLabel.length() + count);
       }
 
-      boolean printTimestamp = !((IoTDBJDBCResultSet) resultSet).isIgnoreTimeStamp();
+      boolean printTimestamp = !((NewIoTDBJDBCResultSet) resultSet).isIgnoreTimeStamp();
       while (j < maxPrintRowCount && !isReachEnd) {
         for (int i = 1; i <= columnCount; i++) {
           String tmp;
