@@ -43,6 +43,8 @@ public class SessionDataSet implements AutoCloseable {
 
   private final IoTDBRpcDataSet ioTDBRpcDataSet;
 
+  public long constructRecordTime = 0;
+
   public SessionDataSet(
       String sql,
       List<String> columnNameList,
@@ -98,6 +100,18 @@ public class SessionDataSet implements AutoCloseable {
             timeout);
   }
 
+  public long getConstructRecordTime() {
+    return constructRecordTime;
+  }
+  public long getConstructRowTime(){
+    return ioTDBRpcDataSet.getConstructRowTime();
+  }
+
+  public long getConstructTsBlockTime(){
+    return ioTDBRpcDataSet.getConstructTsBlockTime();
+  }
+
+
   public int getFetchSize() {
     return ioTDBRpcDataSet.fetchSize;
   }
@@ -119,6 +133,7 @@ public class SessionDataSet implements AutoCloseable {
   }
 
   private RowRecord constructRowRecordFromValueArray() throws StatementExecutionException {
+    long startTime = System.nanoTime();
     List<Field> outFields = new ArrayList<>();
     for (int i = 0; i < ioTDBRpcDataSet.columnSize; i++) {
       Field field;
@@ -171,7 +186,11 @@ public class SessionDataSet implements AutoCloseable {
       }
       outFields.add(field);
     }
-    return new RowRecord(ioTDBRpcDataSet.getTimestamp(TIMESTAMP_STR).getTime(), outFields);
+
+    RowRecord rowRecord = new RowRecord(ioTDBRpcDataSet.time, outFields);
+    long endTime = System.nanoTime();
+    constructRecordTime += (endTime-startTime);
+    return rowRecord;
   }
 
   public RowRecord next() throws StatementExecutionException, IoTDBConnectionException {

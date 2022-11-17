@@ -49,7 +49,7 @@ public class OldIoTDBRpcDataSet {
   public long queryId;
   public long statementId;
   public boolean ignoreTimeStamp;
-
+  public long constructRowTime = 0;
   public int rowsIndex = 0; // used to record the row index in current TSQueryDataSet
 
   public TSQueryDataSet tsQueryDataSet = null;
@@ -159,6 +159,9 @@ public class OldIoTDBRpcDataSet {
     this.tsQueryDataSet = queryDataSet;
     this.emptyResultSet = (queryDataSet == null || !queryDataSet.time.hasRemaining());
   }
+  public long getConstructRowTime() {
+    return constructRowTime;
+  }
 
   public void close() throws StatementExecutionException, TException {
     if (isClosed) {
@@ -211,6 +214,7 @@ public class OldIoTDBRpcDataSet {
   }
 
   public boolean fetchResults() throws StatementExecutionException, IoTDBConnectionException {
+    long startTime = System.nanoTime();
     rowsIndex = 0;
     TSFetchResultsReq req = new TSFetchResultsReq(sessionId, sql, fetchSize, queryId, true);
     req.setTimeout(timeout);
@@ -224,6 +228,7 @@ public class OldIoTDBRpcDataSet {
       } else {
         tsQueryDataSet = resp.getQueryDataSet();
       }
+      long endTime = System.nanoTime();
       return resp.hasResultSet;
     } catch (TException e) {
       throw new IoTDBConnectionException(
@@ -234,8 +239,8 @@ public class OldIoTDBRpcDataSet {
   public boolean hasCachedResults() {
     return (tsQueryDataSet != null && tsQueryDataSet.time.hasRemaining());
   }
-
   public void constructOneRow() {
+    long startTime = System.nanoTime();
     lastReadWasNull = false;
     tsQueryDataSet.time.get(time);
     for (int i = 0; i < tsQueryDataSet.bitmapList.size(); i++) {
@@ -267,6 +272,8 @@ public class OldIoTDBRpcDataSet {
     }
     rowsIndex++;
     hasCachedRecord = true;
+    long endTime = System.nanoTime();
+    constructRowTime += (endTime - startTime);
   }
 
   public boolean isNull(int columnIndex) throws StatementExecutionException {

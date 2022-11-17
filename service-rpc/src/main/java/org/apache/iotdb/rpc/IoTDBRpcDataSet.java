@@ -55,6 +55,9 @@ public class IoTDBRpcDataSet {
   public boolean hasCachedRecord = false;
   public boolean lastReadWasNull;
 
+  public long constructRowTime = 0;
+  public long constructTsBlockTime = 0;
+
   // column size
   public int columnSize;
 
@@ -175,13 +178,16 @@ public class IoTDBRpcDataSet {
   }
 
   public boolean next() throws StatementExecutionException, IoTDBConnectionException {
+//    long startTime = System.nanoTime();
     if (hasCachedBlock()) {
       constructOneRow();
+      long endTime = System.nanoTime();
       return true;
     }
     if (hasCachedByteBuffer()) {
       constructOneTsBlock();
       constructOneRow();
+      long endTime = System.nanoTime();
       return true;
     }
     if (emptyResultSet) {
@@ -196,6 +202,7 @@ public class IoTDBRpcDataSet {
     if (fetchResults() && hasCachedByteBuffer()) {
       constructOneTsBlock();
       constructOneRow();
+      long endTime = System.nanoTime();
       return true;
     } else {
       try {
@@ -209,6 +216,7 @@ public class IoTDBRpcDataSet {
   }
 
   public boolean fetchResults() throws StatementExecutionException, IoTDBConnectionException {
+    long startTime = System.nanoTime();
     queryResultIndex = 0;
     TSFetchResultsReq req = new TSFetchResultsReq(sessionId, sql, fetchSize, queryId, true);
     req.setTimeout(timeout);
@@ -223,6 +231,7 @@ public class IoTDBRpcDataSet {
         queryResult = resp.getQueryResult();
         queryResultSize = queryResult.size();
       }
+      long endTime = System.nanoTime();
       return resp.hasResultSet;
     } catch (TException e) {
       throw new IoTDBConnectionException(
@@ -239,18 +248,32 @@ public class IoTDBRpcDataSet {
   }
 
   public void constructOneRow() {
+    long startTime = System.nanoTime();
     tsBlockIndex++;
     time = curTsBlock.getTimeColumn().getLong(tsBlockIndex);
     hasCachedRecord = true;
+    long endTime = System.nanoTime();
+    constructRowTime += (endTime-startTime);
   }
 
   public void constructOneTsBlock() {
+    long startTime = System.nanoTime();
     lastReadWasNull = false;
     ByteBuffer byteBuffer = queryResult.get(queryResultIndex);
     queryResultIndex++;
     curTsBlock = serde.deserialize(byteBuffer);
     tsBlockIndex = -1;
     tsBlockSize = curTsBlock.getPositionCount();
+    long endTime = System.nanoTime();
+    constructTsBlockTime += (endTime-startTime);
+  }
+
+  public long getConstructRowTime() {
+    return constructRowTime;
+  }
+
+  public long getConstructTsBlockTime() {
+    return constructTsBlockTime;
   }
 
   public boolean isNull(int columnIndex) throws StatementExecutionException {
