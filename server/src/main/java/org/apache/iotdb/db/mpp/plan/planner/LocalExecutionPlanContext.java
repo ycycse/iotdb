@@ -24,6 +24,7 @@ import org.apache.iotdb.db.mpp.execution.fragment.FragmentInstanceContext;
 import org.apache.iotdb.db.mpp.execution.operator.source.DataSourceOperator;
 import org.apache.iotdb.db.mpp.execution.timer.RuleBasedTimeSliceAllocator;
 import org.apache.iotdb.db.mpp.plan.analyze.TypeProvider;
+import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.read.TimeValuePair;
 import org.apache.iotdb.tsfile.read.filter.basic.Filter;
 import org.apache.iotdb.tsfile.utils.Binary;
@@ -61,6 +62,8 @@ public class LocalExecutionPlanContext {
   private Filter lastQueryTimeFilter;
   // whether we need to update last cache
   private boolean needUpdateLastCache;
+
+  private List<TSDataType> cachedDataTypes;
 
   private final RuleBasedTimeSliceAllocator timeSliceAllocator;
 
@@ -168,5 +171,13 @@ public class LocalExecutionPlanContext {
 
   public long getDataRegionTTL() {
     return dataRegionTTL;
+  }
+
+  public void setCachedDataTypes(List<TSDataType> cachedDataTypes) {
+    this.cachedDataTypes = cachedDataTypes;
+  }
+
+  public List<TSDataType> getCachedDataTypes() {
+    return cachedDataTypes;
   }
 }

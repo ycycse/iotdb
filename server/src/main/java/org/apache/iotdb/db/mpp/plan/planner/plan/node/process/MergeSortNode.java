@@ -37,44 +37,31 @@ public class MergeSortNode extends MultiChildProcessNode {
 
   private final OrderByParameter mergeOrderParameter;
 
-  private final List<String> devices;
+  private List<String> outputColumns;
 
-  public MergeSortNode(PlanNodeId id, OrderByParameter mergeOrderParameter, List<String> devices) {
+  public MergeSortNode(PlanNodeId id, OrderByParameter mergeOrderParameter, List<String> outputColumns) {
     super(id);
     this.mergeOrderParameter = mergeOrderParameter;
-    this.devices = devices;
+    this.outputColumns = outputColumns;
   }
 
   public MergeSortNode(PlanNodeId id, OrderByParameter mergeOrderParameter) {
     super(id);
     this.mergeOrderParameter = mergeOrderParameter;
-    this.devices = new ArrayList<>();
-  }
-
-  public void addDevice(String device) {
-    this.devices.add(device);
   }
 
   public OrderByParameter getMergeOrderParameter() {
     return mergeOrderParameter;
   }
 
-  public List<String> getDevices() {
-    return devices;
-  }
-
   @Override
   public PlanNode clone() {
-    return new MergeSortNode(getPlanNodeId(), getMergeOrderParameter(), devices);
+    return new MergeSortNode(getPlanNodeId(), getMergeOrderParameter(), outputColumns);
   }
 
   @Override
   public List<String> getOutputColumnNames() {
-    return children.stream()
-        .map(PlanNode::getOutputColumnNames)
-        .flatMap(List::stream)
-        .distinct()
-        .collect(Collectors.toList());
+    return outputColumns;
   }
 
   @Override
@@ -86,9 +73,9 @@ public class MergeSortNode extends MultiChildProcessNode {
   protected void serializeAttributes(ByteBuffer byteBuffer) {
     PlanNodeType.MERGE_SORT.serialize(byteBuffer);
     mergeOrderParameter.serializeAttributes(byteBuffer);
-    ReadWriteIOUtils.write(devices.size(), byteBuffer);
-    for (String device : devices) {
-      ReadWriteIOUtils.write(device, byteBuffer);
+    ReadWriteIOUtils.write(outputColumns.size(),byteBuffer);
+    for(int i=0;i<outputColumns.size();i++){
+      ReadWriteIOUtils.write(outputColumns.get(i),byteBuffer);
     }
   }
 
@@ -96,22 +83,12 @@ public class MergeSortNode extends MultiChildProcessNode {
   protected void serializeAttributes(DataOutputStream stream) throws IOException {
     PlanNodeType.MERGE_SORT.serialize(stream);
     mergeOrderParameter.serializeAttributes(stream);
-    ReadWriteIOUtils.write(devices.size(), stream);
-    for (String device : devices) {
-      ReadWriteIOUtils.write(device, stream);
-    }
   }
 
   public static MergeSortNode deserialize(ByteBuffer byteBuffer) {
     OrderByParameter orderByParameter = OrderByParameter.deserialize(byteBuffer);
-    int deviceSize = ReadWriteIOUtils.read(byteBuffer);
-    List<String> devices = new ArrayList<>();
-    while (deviceSize > 0) {
-      devices.add(ReadWriteIOUtils.readString(byteBuffer));
-      deviceSize--;
-    }
     PlanNodeId planNodeId = PlanNodeId.deserialize(byteBuffer);
-    return new MergeSortNode(planNodeId, orderByParameter, devices);
+    return new MergeSortNode(planNodeId, orderByParameter);
   }
 
   @Override
