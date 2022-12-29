@@ -50,6 +50,7 @@ public class EqualEventBooleanWindowManager extends EventBooleanWindowManager {
     }
     // we can create a new window beginning at index i of inputTsBlock
     if (i < size) {
+      hasEndTime = true;
       needSkip = false;
     }
     return inputTsBlock.subTsBlock(i);

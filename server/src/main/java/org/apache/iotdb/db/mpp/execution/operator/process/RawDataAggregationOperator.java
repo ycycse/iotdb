@@ -46,6 +46,8 @@ public class RawDataAggregationOperator extends SingleInputAggregationOperator {
 
   private final IWindowManager windowManager;
 
+  boolean hasCachedTsBlock = false;
+
   public RawDataAggregationOperator(
       OperatorContext operatorContext,
       List<Aggregator> aggregators,
@@ -61,7 +63,7 @@ public class RawDataAggregationOperator extends SingleInputAggregationOperator {
   }
 
   private boolean hasMoreData() {
-    return inputTsBlock != null || child.hasNext();
+    return inputTsBlock != null || child.hasNext() || hasCachedTsBlock;
   }
 
   @Override
@@ -84,14 +86,17 @@ public class RawDataAggregationOperator extends SingleInputAggregationOperator {
       } else {
         // If there are no points belong to last time window, the last time window will not
         // initialize window and aggregators. Specially for time window.
-        if (windowManager.notInitedLastTimeWindow()) {
-          initWindowAndAggregators();
+        if (windowManager.notInitedLastTimeWindow() || inputTsBlock == null) {
+          windowManager.next();
+          updateResultTsBlock();
+          hasCachedTsBlock = false;
+          return false;
         }
         break;
       }
     }
 
-    updateResultTsBlock();
+    hasCachedTsBlock = true;
     // Step into next window
     windowManager.next();
 
@@ -101,7 +106,7 @@ public class RawDataAggregationOperator extends SingleInputAggregationOperator {
   private boolean calculateFromRawData() {
 
     // if window is not initialized, we should init window status and reset aggregators
-    if (!windowManager.isCurWindowInit() && !skipPreviousWindowAndInitCurWindow()) {
+    if (!windowManager.isCurWindowInit() && !updatePreviousWindowAndInitCurWindow()) {
       return false;
     }
 
@@ -141,15 +146,19 @@ public class RawDataAggregationOperator extends SingleInputAggregationOperator {
     windowManager.appendAggregationResult(resultTsBlockBuilder, aggregators);
   }
 
-  private boolean skipPreviousWindowAndInitCurWindow() {
+  private boolean updatePreviousWindowAndInitCurWindow() {
     // Before we initialize windowManager and aggregators, we should ensure that we have consumed
     // all points belong to previous window
     inputTsBlock = windowManager.skipPointsOutOfCurWindow(inputTsBlock);
     // After skipping, if tsBlock is empty, we cannot ensure that we have consumed all points belong
     // to previous window, we should go back to calculateNextAggregationResult() to get a new
     // tsBlock
-    if (inputTsBlock == null || inputTsBlock.isEmpty()) {
+    if ((!windowManager.canOutputEndTime()) && (inputTsBlock == null || inputTsBlock.isEmpty())) {
       return false;
+    }
+    if (hasCachedTsBlock) {
+      updateResultTsBlock();
+      hasCachedTsBlock = false;
     }
     // If we have consumed all points belong to previous window, we can initialize current window
     // and aggregators

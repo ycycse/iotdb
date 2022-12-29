@@ -102,4 +102,6 @@ public interface IWindowManager {
   void appendAggregationResult(TsBlockBuilder resultTsBlockBuilder, List<Aggregator> aggregators);
 
   boolean notInitedLastTimeWindow();
+
+  boolean canOutputEndTime();
 }

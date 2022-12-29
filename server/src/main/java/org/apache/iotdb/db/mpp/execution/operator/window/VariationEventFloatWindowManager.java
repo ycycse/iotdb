@@ -52,7 +52,9 @@ public class VariationEventFloatWindowManager extends EventFloatWindowManager {
     }
     // we can create a new window beginning at index i of inputTsBlock
     if (i < size) {
+      // todo: set endTime
       needSkip = false;
+      hasEndTime = true;
     }
     return inputTsBlock.subTsBlock(i);
   }

@@ -38,6 +38,8 @@ public abstract class EventWindowManager implements IWindowManager {
 
   protected boolean hasAppendedResult;
 
+  protected boolean hasEndTime;
+
   protected WindowParameter windowParameter;
 
   protected EventWindow eventWindow;
@@ -74,6 +76,7 @@ public abstract class EventWindowManager implements IWindowManager {
     // belong to previous window have been consumed. If not, we need skip these points.
     this.needSkip = true;
     this.initialized = false;
+    this.hasEndTime = false;
     this.eventWindow.updatePreviousEventValue();
   }
 
@@ -126,5 +129,10 @@ public abstract class EventWindowManager implements IWindowManager {
   @Override
   public boolean notInitedLastTimeWindow() {
     return false;
+  }
+
+  @Override
+  public boolean canOutputEndTime() {
+    return windowParameter.isNeedOutputEndTime() && hasEndTime;
   }
 }

@@ -39,6 +39,8 @@ public class TimeWindowManager implements IWindowManager {
 
   private boolean needSkip;
 
+  private long startTime;
+
   public TimeWindowManager(ITimeRangeIterator timeRangeIterator) {
     this.timeRangeIterator = timeRangeIterator;
     this.initialized = false;
@@ -60,7 +62,9 @@ public class TimeWindowManager implements IWindowManager {
 
   @Override
   public boolean hasNext(boolean hasMoreData) {
-    return this.curWindow.getCurTimeRange() != null || this.timeRangeIterator.hasNextTimeRange();
+    return hasMoreData
+        || this.curWindow.getCurTimeRange() != null
+        || this.timeRangeIterator.hasNextTimeRange();
   }
 
   @Override
@@ -69,6 +73,7 @@ public class TimeWindowManager implements IWindowManager {
     // belong to previous window have been consumed. If not, we need skip these points.
     this.needSkip = true;
     this.initialized = false;
+    this.startTime = this.timeRangeIterator.currentOutputTime();
     this.curWindow.update(this.timeRangeIterator.nextTimeRange());
   }
 
@@ -105,7 +110,8 @@ public class TimeWindowManager implements IWindowManager {
       // Here, current window does not overlap with inputTsBlock. We could skip the whole
       // inputTsBlock if the time range of inputTsBlock has been overdue compare to the time range
       // of current window.
-      if ((ascending && inputTsBlock.getEndTime() < curWindow.getCurMinTime())
+      if (curWindow.getCurTimeRange() == null
+          || (ascending && inputTsBlock.getEndTime() < curWindow.getCurMinTime())
           || (!ascending && inputTsBlock.getEndTime() > curWindow.getCurMaxTime())) {
         skipIndex = positionCount;
       }
@@ -119,6 +125,7 @@ public class TimeWindowManager implements IWindowManager {
 
   @Override
   public boolean satisfiedCurWindow(TsBlock inputTsBlock) {
+    if (curWindow.getCurTimeRange() == null) return false;
     return AggregationUtil.satisfiedTimeRange(inputTsBlock, curWindow.getCurTimeRange(), ascending);
   }
 
@@ -138,12 +145,16 @@ public class TimeWindowManager implements IWindowManager {
   @Override
   public void appendAggregationResult(
       TsBlockBuilder resultTsBlockBuilder, List<Aggregator> aggregators) {
-    AggregationUtil.appendAggregationResult(
-        resultTsBlockBuilder, aggregators, timeRangeIterator.currentOutputTime());
+    AggregationUtil.appendAggregationResult(resultTsBlockBuilder, aggregators, startTime);
   }
 
   @Override
   public boolean notInitedLastTimeWindow() {
     return !this.initialized;
+  }
+
+  @Override
+  public boolean canOutputEndTime() {
+    return false;
   }
 }

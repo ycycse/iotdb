@@ -50,6 +50,8 @@ public class EqualEventDoubleWindowManager extends EventDoubleWindowManager {
     }
     // we can create a new window beginning at index i of inputTsBlock
     if (i < size) {
+      // todo: set endTime
+      hasEndTime = true;
       needSkip = false;
     }
     return inputTsBlock.subTsBlock(i);
