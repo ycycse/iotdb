@@ -200,6 +200,20 @@ public class IoTDBGroupByConditionIT {
     normalTest(res, sql2);
   }
 
+  @Test
+  public void groupByConditionTest5() {
+    String[][] res =
+        new String[][] {
+          {"3", "4", "1.0", "2", "16.0"},
+        };
+    String sql =
+        "select __endTime,max_time(charging_status) - min_time(charging_status),count(vehicle_status),last_value(soc) from root.sg.beijing.car01 group by condition(charging_status=0,KEEP=2,ignoreNull=true)";
+    normalTestWithEndTime(res, sql);
+    String sql2 =
+        "select max_time(charging_status) - min_time(charging_status),count(vehicle_status),last_value(soc) from root.sg.beijing.car01 group by condition(charging_status=0,KEEP=2,ignoreNull=true)";
+    normalTest(res, sql2);
+  }
+
   private void normalTestWithEndTime(String[][] res, String sql) {
     try (Connection connection = EnvFactory.getEnv().getConnection();
         Statement statement = connection.createStatement()) {
