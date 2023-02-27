@@ -124,9 +124,9 @@ import org.apache.iotdb.db.mpp.execution.operator.source.SeriesAggregationScanOp
 import org.apache.iotdb.db.mpp.execution.operator.source.SeriesScanOperator;
 import org.apache.iotdb.db.mpp.execution.operator.source.ShowQueriesOperator;
 import org.apache.iotdb.db.mpp.execution.operator.window.ConditionWindowParameter;
-import org.apache.iotdb.db.mpp.execution.operator.window.EventWindowParameter;
 import org.apache.iotdb.db.mpp.execution.operator.window.SessionWindowParameter;
 import org.apache.iotdb.db.mpp.execution.operator.window.TimeWindowParameter;
+import org.apache.iotdb.db.mpp.execution.operator.window.VariationWindowParameter;
 import org.apache.iotdb.db.mpp.execution.operator.window.WindowParameter;
 import org.apache.iotdb.db.mpp.execution.operator.window.WindowType;
 import org.apache.iotdb.db.mpp.plan.Coordinator;
@@ -1463,7 +1463,7 @@ public class OperatorTreeGenerator extends PlanVisitor<Operator, LocalExecutionP
 
         WindowParameter windowParameter;
         switch (windowType) {
-          case EVENT_WINDOW:
+          case VARIATION_WINDOW:
             Expression groupByVariationExpression = node.getGroupByExpression();
             if (groupByVariationExpression == null) {
               throw new IllegalArgumentException("groupByVariationExpression can't be null");
@@ -1471,7 +1471,7 @@ public class OperatorTreeGenerator extends PlanVisitor<Operator, LocalExecutionP
             String controlColumn = groupByVariationExpression.getExpressionString();
             TSDataType controlColumnType = context.getTypeProvider().getType(controlColumn);
             windowParameter =
-                new EventWindowParameter(
+                new VariationWindowParameter(
                     controlColumnType,
                     layout.get(controlColumn).get(0).getValueColumnIndex(),
                     node.isOutputEndTime(),
